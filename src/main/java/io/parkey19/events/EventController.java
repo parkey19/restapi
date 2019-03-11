@@ -28,7 +28,7 @@ public class EventController {
     public HttpEntity createEvent(@RequestBody Event event) {
         Event newEvent = eventRepository.save(event);
         URI createdUri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
-        newEvent.setId(10);
+//        newEvent.setId(10);
         return ResponseEntity.created(createdUri).body(newEvent);
     }
 }
