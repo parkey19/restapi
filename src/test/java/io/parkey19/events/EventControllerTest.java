@@ -1,14 +1,13 @@
 package io.parkey19.events;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.JsonPath;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
@@ -26,7 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Created by parkey19 on 2019. 3. 11..
  */
 @RunWith(SpringRunner.class)
-@WebMvcTest
+@SpringBootTest
+@AutoConfigureMockMvc
 public class EventControllerTest {
 
     @Autowired
@@ -35,10 +35,8 @@ public class EventControllerTest {
     @Autowired
     ObjectMapper objectMapper;
 
-    @MockBean
-    EventRepository eventRepository;
-
-    public Event createEvent() {
+    @Test
+    public void createTest() throws Exception {
         Event event = Event.builder()
                 .name("rest api 만들기")
                 .description("spring boot rest api ")
@@ -49,29 +47,57 @@ public class EventControllerTest {
                 .basePrice(100)
                 .maxPrice(200)
                 .limitOfEnrollment(100)
-                .location("online")
+                .location("강남")
+                .free(true)
+                .offline(false)
+                .eventStatus(EventStatus.DRAFT)
                 .build();
-        event.setId(10);
-        return event;
+//        event.setId(10);
+
+//        Mockito.when(eventRepository.save(event)).thenReturn(event);
+
+
+        mockMvc.perform(post("/api/events/")
+                .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
+                .accept(MediaTypes.HAL_JSON) //받고싶은 타입
+                .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
+                .andDo(print())
+                .andExpect(status().isCreated()) // 201 상태인지 확인
+                .andExpect(jsonPath("id").exists()) //ID가 있는지 확인
+                .andExpect(header().exists(HttpHeaders.LOCATION)) // HEADER에 Location 있는지 확인
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_UTF8_VALUE)) //Content-Type 값 확인
+                .andExpect(jsonPath("id").value(Matchers.not(100))) // ID가 100이 아니면
+                .andExpect(jsonPath("free").value(Matchers.not(true))) // free가 true가
+                .andExpect(jsonPath("eventStatus").value(EventStatus.DRAFT.name()));
+
+
     }
 
     @Test
-    public void createTest() throws Exception {
-        Event event = createEvent();
+    public void badRequestTest() throws Exception {
+        Event event = Event.builder()
+                .name("rest api 만들기")
+                .description("spring boot rest api ")
+                .beginEnrollmentDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .closeEnrollmentDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .beginEventDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .endEventDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남")
+                .free(true)
+                .offline(false)
+                .eventStatus(EventStatus.DRAFT)
+                .build();
 
-        Mockito.when(eventRepository.save(event)).thenReturn(event);
 
-
-        mockMvc.perform(post("/api/event")
-                    .contentType(MediaType.APPLICATION_JSON_UTF8)
-                    .accept(MediaTypes.HAL_JSON)
-                    .content(objectMapper.writeValueAsString(event)))
+        mockMvc.perform(post("/api/events/")
+                .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
+                .accept(MediaTypes.HAL_JSON) //받고싶은 타입
+                .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
                 .andDo(print())
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("id").exists())
-                .andExpect(redirectedUrl("http://localhost/api/event/10"))
-                .andExpect(header().exists(HttpHeaders.LOCATION))
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_UTF8_VALUE));
+                .andExpect(status().isBadRequest()); // 400 상태인지 확인
 
 
     }
