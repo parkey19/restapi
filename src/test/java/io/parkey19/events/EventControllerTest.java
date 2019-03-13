@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -36,7 +37,7 @@ public class EventControllerTest {
 
     @Test
     public void createTest() throws Exception {
-        Event event = Event.builder()
+        EventDto event = EventDto.builder()
                 .name("rest api 만들기")
                 .description("spring boot rest api ")
                 .beginEnrollmentDateTime(LocalDateTime.of(2019,3,11,10,0,0))
@@ -47,9 +48,6 @@ public class EventControllerTest {
                 .maxPrice(200)
                 .limitOfEnrollment(100)
                 .location("강남")
-                .free(true)
-                .offline(false)
-                .eventStatus(EventStatus.DRAFT)
                 .build();
 
 
@@ -62,9 +60,14 @@ public class EventControllerTest {
                 .andExpect(jsonPath("id").exists()) //ID가 있는지 확인
                 .andExpect(header().exists(HttpHeaders.LOCATION)) // HEADER에 Location 있는지 확인
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_UTF8_VALUE)) //Content-Type 값 확인
-                .andExpect(jsonPath("id").value(Matchers.not(100))) // ID가 100이 아니면
-                .andExpect(jsonPath("free").value(Matchers.not(true))) // free가 true가
-                .andExpect(jsonPath("eventStatus").value(EventStatus.DRAFT.name()));
+                .andExpect(jsonPath("free").value(false)) // free가 true가
+                .andExpect(jsonPath("offline").value(true)) // free가 true가
+                .andExpect(jsonPath("eventStatus").value(EventStatus.DRAFT.name()))
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.update-event").exists())
+                .andExpect(jsonPath("_links.query-events").exists())
+        ;
+
 
 
     }
@@ -136,4 +139,6 @@ public class EventControllerTest {
                 .andExpect(jsonPath("$[0].code").exists())
         ;
     }
+
+
 }

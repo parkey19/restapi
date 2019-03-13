@@ -3,6 +3,7 @@ package io.parkey19.events;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
@@ -32,6 +33,7 @@ public class EventController {
 
     @Autowired
     private EventValidator eventValidator;
+
     @PostMapping
     public HttpEntity createEvent(@RequestBody @Validated EventDto eventDto, Errors errors) {
 
@@ -46,10 +48,15 @@ public class EventController {
         }
 
         Event event = modelMapper.map(eventDto, Event.class);
+        event.update();
         Event newEvent = this.eventRepository.save(event);
-
-        URI createdUri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
+        ControllerLinkBuilder selfLink = linkTo(EventController.class).slash(newEvent.getId());
+        URI createdUri = selfLink.toUri();
+        EventResource eventResource = new EventResource(newEvent);
+        eventResource.add(linkTo(EventController.class).withRel("query-events"));
+        eventResource.add(selfLink.withSelfRel());
+        eventResource.add(selfLink.withRel("update-event"));
 //        newEvent.setId(10);
-        return ResponseEntity.created(createdUri).body(newEvent);
+        return ResponseEntity.created(createdUri).body(eventResource);
     }
 }
