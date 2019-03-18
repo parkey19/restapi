@@ -2,6 +2,7 @@ package io.parkey19.events;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.HttpEntity;
@@ -54,6 +55,7 @@ public class EventController {
         EventResource eventResource = new EventResource(newEvent);
         eventResource.add(linkTo(EventController.class).withRel("query-events"));
         eventResource.add(selfLink.withRel("update-event"));
+        eventResource.add(new Link("/docs/index.html").withRel("profile"));
 //        newEvent.setId(10);
         return ResponseEntity.created(createdUri).body(eventResource);
     }
