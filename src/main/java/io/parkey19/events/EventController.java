@@ -1,5 +1,6 @@
 package io.parkey19.events;
 
+import io.parkey19.common.ErrorsResource;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
@@ -37,14 +38,12 @@ public class EventController {
     @PostMapping
     public HttpEntity createEvent(@RequestBody @Validated EventDto eventDto, Errors errors) {
 
-        if(errors.hasErrors()) {
-            return ResponseEntity.badRequest().build();
-        }
+        if(errors.hasErrors())
+            return badRequest(errors);
 
         eventValidator.validate(eventDto, errors);
-
         if(errors.hasErrors()) {
-            return ResponseEntity.badRequest().body(errors);
+            return badRequest(errors);
         }
 
         Event event = modelMapper.map(eventDto, Event.class);
@@ -58,5 +57,9 @@ public class EventController {
         eventResource.add(new Link("/docs/index.html").withRel("profile"));
 //        newEvent.setId(10);
         return ResponseEntity.created(createdUri).body(eventResource);
+    }
+
+    private ResponseEntity badRequest(Errors errors) {
+        return ResponseEntity.badRequest().body(new ErrorsResource(errors));
     }
 }
