@@ -29,6 +29,8 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -226,7 +228,44 @@ public class EventControllerTest {
                 .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
                 .andExpect(jsonPath("_links.self").exists())
                 .andExpect(jsonPath("_links.profile").exists())
-                .andDo(document("query-events"))
+                .andDo(document("query-events",
+                        links(
+                                linkWithRel("first").description("link to first page"),
+                                linkWithRel("prev").description("link to prev page"),
+                                linkWithRel("self").description("link to self"),
+                                linkWithRel("next").description("link to next page"),
+                                linkWithRel("last").description("link to last page"),
+                                linkWithRel("profile").description("link to profile")
+                        ),
+                        requestParameters( //요청 필드 문서화
+                                parameterWithName("page").description("page 0부터 시작"),
+                                parameterWithName("size").description("한번에 보여줄 리스트 개수"),
+                                parameterWithName("sort").description("정렬 컬럼")
+                        ),
+                        responseHeaders( //응답 헤더 문서화
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("Content type")
+                        ),
+                        responseFields( //응답 본문 문서화
+                                fieldWithPath("_embedded.eventList[0].id").description("identifier of new event"),
+                                fieldWithPath("_embedded.eventList[0].name").description("event name"),
+                                fieldWithPath("_embedded.eventList[0].description").description("date time of begin of new event"),
+                                fieldWithPath("_embedded.eventList[0].beginEnrollmentDateTime").description("date time of begin of new event"),
+                                fieldWithPath("_embedded.eventList[0].closeEnrollmentDateTime").description("date time of close of new event"),
+                                fieldWithPath("_embedded.eventList[0].beginEventDateTime").description("date time of begin of new event"),
+                                fieldWithPath("_embedded.eventList[0].endEventDateTime").description("date time of end of new event"),
+                                fieldWithPath("_embedded.eventList[0].location").description("location of new event"),
+                                fieldWithPath("_embedded.eventList[0].basePrice").description("base price of new event"),
+                                fieldWithPath("_embedded.eventList[0].maxPrice").description("max price of new event"),
+                                fieldWithPath("_embedded.eventList[0].limitOfEnrollment").description("limit of enrollment"),
+                                fieldWithPath("_embedded.eventList[0].free").description("it tells if this event is free or not"),
+                                fieldWithPath("_embedded.eventList[0].offline").description("it tells if this event is offline meeting or not"),
+                                fieldWithPath("_embedded.eventList[0].eventStatus").description("event status")
+////                                fieldWithPath("_links.self.href").description("link to self"),
+////                                fieldWithPath("_links.query-events.href").description("link to query events list"),
+////                                fieldWithPath("_links.update-event.href").description("link to update an existing event"),
+////                                fieldWithPath("_links.profile.href").description("link to profile")
+                        )
+                        ))
         ;
 
     }
