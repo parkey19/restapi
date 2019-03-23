@@ -18,6 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Optional;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
@@ -67,6 +68,20 @@ public class EventController {
         PagedResources<Resource<Event>> resources = assembler.toResource(page, event -> new EventResource(event));
         resources.add(new Link("/docs/index.html#resources-events-list").withRel("profile"));
         return ResponseEntity.ok(resources);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity getEvent(@PathVariable Integer id) {
+        Optional<Event> eventOptional = this.eventRepository.findById(id);
+        if (!eventOptional.isPresent()) return ResponseEntity.notFound().build();
+
+        Event event = eventOptional.get();
+
+        EventResource eventResource = new EventResource(event);
+        eventResource.add(new Link("/docs/index.html#resources-events-get").withRel("profile"));
+        return ResponseEntity.ok(eventResource);
+
+
     }
 
     private ResponseEntity badRequest(Errors errors) {
