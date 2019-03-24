@@ -236,7 +236,7 @@ public class EventControllerTest {
                 .andExpect(jsonPath("_links.profile").exists())
                 .andDo(document("query-events",
                         links(
-                                linkWithRel("_links.first").description("link to first page"),
+                                linkWithRel("first").description("link to first page"),
                                 linkWithRel("prev").description("link to prev page"),
                                 linkWithRel("self").description("link to self"),
                                 linkWithRel("next").description("link to next page"),
@@ -269,7 +269,14 @@ public class EventControllerTest {
                                 fieldWithPath("_embedded.eventList[0]._links.self.href").description("self href"),
                                 fieldWithPath("_links.self.href").description("link to self"),
                                 fieldWithPath("_links.profile.href").description("link to profile"),
-                                fieldWithPath("_links.first.href").description("link to first page")
+                                fieldWithPath("_links.first.href").description("link to first page"),
+                                fieldWithPath("_links.prev.href").description("link to prev page"),
+                                fieldWithPath("_links.next.href").description("link to next page"),
+                                fieldWithPath("_links.last.href").description("link to last page"),
+                                fieldWithPath("page.size").description("page size"),
+                                fieldWithPath("page.totalElements").description("page total elements"),
+                                fieldWithPath("page.totalPages").description("total page size"),
+                                fieldWithPath("page.number").description("page number")
                         )
                         ))
         ;
