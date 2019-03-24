@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.parkey19.common.RestDocsConfigration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -33,6 +34,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -55,6 +57,9 @@ public class EventControllerTest {
 
     @Autowired
     EventRepository eventRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Test
     public void createTest() throws Exception {
@@ -108,7 +113,8 @@ public class EventControllerTest {
                                 fieldWithPath("location").description("location of new event"),
                                 fieldWithPath("basePrice").description("base price of new event"),
                                 fieldWithPath("maxPrice").description("max price of new event"),
-                                fieldWithPath("limitOfEnrollment").description("limit of enrollment")
+                                fieldWithPath("limitOfEnrollment").description("limit of enrollment"),
+                                fieldWithPath("eventStatus").description("event status")
                         ),
                         responseHeaders( //응답 헤더 문서화
                                 headerWithName(HttpHeaders.LOCATION).description("Location header"),
@@ -230,7 +236,7 @@ public class EventControllerTest {
                 .andExpect(jsonPath("_links.profile").exists())
                 .andDo(document("query-events",
                         links(
-                                linkWithRel("first").description("link to first page"),
+                                linkWithRel("_links.first").description("link to first page"),
                                 linkWithRel("prev").description("link to prev page"),
                                 linkWithRel("self").description("link to self"),
                                 linkWithRel("next").description("link to next page"),
@@ -259,11 +265,11 @@ public class EventControllerTest {
                                 fieldWithPath("_embedded.eventList[0].limitOfEnrollment").description("limit of enrollment"),
                                 fieldWithPath("_embedded.eventList[0].free").description("it tells if this event is free or not"),
                                 fieldWithPath("_embedded.eventList[0].offline").description("it tells if this event is offline meeting or not"),
-                                fieldWithPath("_embedded.eventList[0].eventStatus").description("event status")
-////                                fieldWithPath("_links.self.href").description("link to self"),
-////                                fieldWithPath("_links.query-events.href").description("link to query events list"),
-////                                fieldWithPath("_links.update-event.href").description("link to update an existing event"),
-////                                fieldWithPath("_links.profile.href").description("link to profile")
+                                fieldWithPath("_embedded.eventList[0].eventStatus").description("event status"),
+                                fieldWithPath("_embedded.eventList[0]._links.self.href").description("self href"),
+                                fieldWithPath("_links.self.href").description("link to self"),
+                                fieldWithPath("_links.profile.href").description("link to profile"),
+                                fieldWithPath("_links.first.href").description("link to first page")
                         )
                         ))
         ;
@@ -304,5 +310,136 @@ public class EventControllerTest {
         return this.eventRepository.save(event);
     }
 
+    @Test
+    @TestDescription("기존의 이벤트를 하나 수정하기")
+    public void getEventUpdate() throws Exception {
+        //given
+        Event updateTargetEvent = Event.builder()
+                .name("rest api 만들기 22")
+                .description("spring boot rest api ")
+                .beginEnrollmentDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .closeEnrollmentDateTime(LocalDateTime.of(2019,3,12,10,0,0))
+                .beginEventDateTime(LocalDateTime.of(2019,3,13,10,0,0))
+                .endEventDateTime(LocalDateTime.of(2019,3,14,10,0,0))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남")
+                .build();
 
+        Event event = this.eventRepository.save(updateTargetEvent);
+        event.setName("수정 중");
+        event.setEventStatus(EventStatus.PUBLISHED);
+        EventDto eventDto = modelMapper.map(event, EventDto.class);
+
+        mockMvc.perform((put("/api/events/{id}", event.getId()))
+                .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
+                .accept(MediaTypes.HAL_JSON) //받고싶은 타입
+                .content(objectMapper.writeValueAsString(eventDto))) //event를 json을 String으로 맵핑
+                .andDo(print())
+                .andExpect(status().isOk()) // 200 상태인지 확인
+                .andExpect(jsonPath("id").exists()) //ID가 있는지 확인
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_UTF8_VALUE))
+                .andExpect(jsonPath("name").value("수정 중"))
+                .andExpect(jsonPath("eventStatus").value(EventStatus.PUBLISHED.name()))
+                .andExpect(jsonPath("_links.self").exists())
+//                .andExpect(jsonPath("_links.update-event").exists())
+//                .andExpect(jsonPath("_links.query-events").exists())
+                .andDo(document("update-event",
+                        links(
+                                linkWithRel("self").description("link to self"),
+                                linkWithRel("profile").description("link to profile")
+                        ),
+                        requestHeaders( //요청 헤더 문서화
+                                headerWithName(HttpHeaders.ACCEPT).description("accept header"),
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("content type header")
+                        ),
+                        requestFields( //요청 필드 문서화
+                                fieldWithPath("name").description("Name of new event"),
+                                fieldWithPath("description").description("date time of begin of new event"),
+                                fieldWithPath("beginEnrollmentDateTime").description("date time of begin of new event"),
+                                fieldWithPath("closeEnrollmentDateTime").description("date time of close of new event"),
+                                fieldWithPath("beginEventDateTime").description("date time of begin of new event"),
+                                fieldWithPath("endEventDateTime").description("date time of end of new event"),
+                                fieldWithPath("location").description("location of new event"),
+                                fieldWithPath("basePrice").description("base price of new event"),
+                                fieldWithPath("maxPrice").description("max price of new event"),
+                                fieldWithPath("limitOfEnrollment").description("limit of enrollment"),
+                                fieldWithPath("eventStatus").description("event status")
+                        ),
+                        responseHeaders( //응답 헤더 문서화
+//                                headerWithName(HttpHeaders.LOCATION).description("Location header"),
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("Content type")
+                        )//,
+//                        responseFields( //응답 본문 문서화
+//                                fieldWithPath("id").description("identifier of new event"),
+//                                fieldWithPath("name").description("event name"),
+//                                fieldWithPath("description").description("date time of begin of new event"),
+//                                fieldWithPath("beginEnrollmentDateTime").description("date time of begin of new event"),
+//                                fieldWithPath("closeEnrollmentDateTime").description("date time of close of new event"),
+//                                fieldWithPath("beginEventDateTime").description("date time of begin of new event"),
+//                                fieldWithPath("endEventDateTime").description("date time of end of new event"),
+//                                fieldWithPath("location").description("location of new event"),
+//                                fieldWithPath("basePrice").description("base price of new event"),
+//                                fieldWithPath("maxPrice").description("max price of new event"),
+//                                fieldWithPath("limitOfEnrollment").description("limit of enrollment"),
+//                                fieldWithPath("free").description("it tells if this event is free or not"),
+//                                fieldWithPath("offline").description("it tells if this event is offline meeting or not"),
+//                                fieldWithPath("eventStatus").description("event status"),
+//                                fieldWithPath("_links.self.href").description("link to self"),
+//                                fieldWithPath("_links.query-events.href").description("link to query events list"),
+//                                fieldWithPath("_links.update-event.href").description("link to update an existing event"),
+//                                fieldWithPath("_links.profile.href").description("link to profile")
+//                        )
+                ));
+
+
+
+    }
+
+    @Test
+    @TestDescription("없는 이벤트는 조회했을 때 404 응답받기")
+    public void getEventUpdate400() throws Exception {
+        //given
+        Event event = this.generateEvent(100);
+        // When & Then
+        this.mockMvc.perform(put("/api/events/11883")
+                .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
+                .accept(MediaTypes.HAL_JSON) //받고싶은 타입
+                .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
+                .andDo(print())
+                .andExpect(status().is4xxClientError())
+        ;
+
+
+    }
+
+    @Test
+    @TestDescription("없는 이벤트는 조회했을 때 404 응답받기")
+    public void getEventUpdate404() throws Exception {
+        //given
+        EventDto event = EventDto.builder()
+                .name("rest api 만들기")
+                .description("spring boot rest api ")
+                .beginEnrollmentDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .closeEnrollmentDateTime(LocalDateTime.of(2019,3,12,10,0,0))
+                .beginEventDateTime(LocalDateTime.of(2019,3,13,10,0,0))
+                .endEventDateTime(LocalDateTime.of(2019,3,14,10,0,0))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남")
+                .build();
+
+        // When & Then
+        this.mockMvc.perform(put("/api/events/11883")
+                .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
+                .accept(MediaTypes.HAL_JSON) //받고싶은 타입
+                .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
+                .andDo(print())
+                .andExpect(status().isNotFound())
+        ;
+
+
+    }
 }

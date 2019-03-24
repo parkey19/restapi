@@ -34,5 +34,8 @@ public class Event {
     public void update() {
         this.free = this.basePrice == 0 && this.maxPrice == 0 ? true : false;
         this.offline = StringUtils.isEmpty(this.location) ? false:true;
+         if (eventStatus == null) {
+             this.eventStatus = EventStatus.DRAFT;
+        }
     }
 }

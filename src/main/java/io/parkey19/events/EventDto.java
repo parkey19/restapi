@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -35,5 +37,7 @@ public class EventDto {
     private int maxPrice; // (optional) 최고 금액
     @Min(0)
     private int limitOfEnrollment; //등록한도
+    @Enumerated(EnumType.STRING)
+    private EventStatus eventStatus = EventStatus.DRAFT;
 
 }
