@@ -1,5 +1,6 @@
 package io.parkey19.events;
 
+import io.parkey19.account.Account;
 import lombok.*;
 import org.springframework.util.StringUtils;
 
@@ -30,6 +31,9 @@ public class Event {
     private boolean offline;
     @Enumerated(EnumType.STRING)
     private EventStatus eventStatus = EventStatus.DRAFT;
+
+    @ManyToOne
+    private Account manager;
 
     public void update() {
         this.free = this.basePrice == 0 && this.maxPrice == 0 ? true : false;
