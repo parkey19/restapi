@@ -251,17 +251,17 @@ public class EventControllerTest extends BaseControllerTest {
     }
 
     @Test
-    @TestDescription("30개이벤트를 조회")
+    @TestDescription("인증안된 사용자 30개이벤트를 조회")
     public void queryEvents() throws Exception{
         //given
         IntStream.range(0,30).forEach(this::generateEvent);
 
         //when
         this.mockMvc.perform(get("/api/events")
-                        .param("page", "1")
-                        .param("size", "10")
-                        .param("sort", "name,DESC")
-                        )
+                .param("page", "1")
+                .param("size", "10")
+                .param("sort", "name,DESC")
+        )
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("page").exists())
@@ -313,13 +313,85 @@ public class EventControllerTest extends BaseControllerTest {
                                 fieldWithPath("page.totalPages").description("total page size"),
                                 fieldWithPath("page.number").description("page number")
                         )
+                ))
+        ;
+
+    }
+
+    @Test
+    @TestDescription("인증된 사용자 30개이벤트를 조회")
+    public void userQueryEvents() throws Exception{
+        //given
+        IntStream.range(0,30).forEach(this::generateEvent);
+
+        //when
+        this.mockMvc.perform(get("/api/events")
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                        .param("page", "1")
+                        .param("size", "10")
+                        .param("sort", "name,DESC")
+                        )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("page").exists())
+                .andExpect(jsonPath("_embedded.eventList[0]._links.self").exists())
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andExpect(jsonPath("_links.create-event").exists())
+                .andDo(document("query-events",
+                        links(
+                                linkWithRel("first").description("link to first page"),
+                                linkWithRel("prev").description("link to prev page"),
+                                linkWithRel("self").description("link to self"),
+                                linkWithRel("next").description("link to next page"),
+                                linkWithRel("last").description("link to last page"),
+                                linkWithRel("profile").description("link to profile"),
+                                linkWithRel("create-event").description("link to create event")
+                        ),
+                        requestParameters( //요청 필드 문서화
+                                parameterWithName("page").description("page 0부터 시작"),
+                                parameterWithName("size").description("한번에 보여줄 리스트 개수"),
+                                parameterWithName("sort").description("정렬 컬럼")
+                        ),
+                        responseHeaders( //응답 헤더 문서화
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("Content type")
+                        ),
+                        responseFields( //응답 본문 문서화
+                                fieldWithPath("_embedded.eventList[0].id").description("identifier of new event"),
+                                fieldWithPath("_embedded.eventList[0].name").description("event name"),
+                                fieldWithPath("_embedded.eventList[0].description").description("date time of begin of new event"),
+                                fieldWithPath("_embedded.eventList[0].beginEnrollmentDateTime").description("date time of begin of new event"),
+                                fieldWithPath("_embedded.eventList[0].closeEnrollmentDateTime").description("date time of close of new event"),
+                                fieldWithPath("_embedded.eventList[0].beginEventDateTime").description("date time of begin of new event"),
+                                fieldWithPath("_embedded.eventList[0].endEventDateTime").description("date time of end of new event"),
+                                fieldWithPath("_embedded.eventList[0].location").description("location of new event"),
+                                fieldWithPath("_embedded.eventList[0].basePrice").description("base price of new event"),
+                                fieldWithPath("_embedded.eventList[0].maxPrice").description("max price of new event"),
+                                fieldWithPath("_embedded.eventList[0].limitOfEnrollment").description("limit of enrollment"),
+                                fieldWithPath("_embedded.eventList[0].free").description("it tells if this event is free or not"),
+                                fieldWithPath("_embedded.eventList[0].offline").description("it tells if this event is offline meeting or not"),
+                                fieldWithPath("_embedded.eventList[0].eventStatus").description("event status"),
+                                fieldWithPath("_embedded.eventList[0].manager").description("manager"),
+                                fieldWithPath("_embedded.eventList[0]._links.self.href").description("self href"),
+                                fieldWithPath("_links.self.href").description("link to self"),
+                                fieldWithPath("_links.profile.href").description("link to profile"),
+                                fieldWithPath("_links.first.href").description("link to first page"),
+                                fieldWithPath("_links.prev.href").description("link to prev page"),
+                                fieldWithPath("_links.next.href").description("link to next page"),
+                                fieldWithPath("_links.last.href").description("link to last page"),
+                                fieldWithPath("_links.create-event.href").description("link to create event"),
+                                fieldWithPath("page.size").description("page size"),
+                                fieldWithPath("page.totalElements").description("page total elements"),
+                                fieldWithPath("page.totalPages").description("total page size"),
+                                fieldWithPath("page.number").description("page number")
+                        )
                         ))
         ;
 
     }
 
     @Test
-    @TestDescription("기존의 이벤트를 하나 조회하기")
+    @TestDescription("인증 없이 기존의 이벤트를 하나 조회하기")
     public void getEvent() throws Exception {
         // Given
         Event event = this.generateEvent(100);
@@ -331,6 +403,27 @@ public class EventControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("id").exists())
                 .andExpect(jsonPath("_links.self").exists())
                 .andExpect(jsonPath("_links.profile").exists())
+                .andExpect(jsonPath("_links.update-event").doesNotExist())
+                .andDo(document("get-an-event"))
+        ;
+    }
+
+    @Test
+    @TestDescription("인증 있는 기존의 이벤트를 하나 조회하기")
+    public void userGetEvent() throws Exception {
+        // Given
+        Event event = this.generateEvent(100);
+
+        // When & Then
+        this.mockMvc.perform((get("/api/events/{id}", event.getId())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("name").exists())
+                .andExpect(jsonPath("id").exists())
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.profile").exists())
+                .andExpect(jsonPath("_links.update-event").exists())
                 .andDo(document("get-an-event"))
         ;
     }
@@ -457,6 +550,7 @@ public class EventControllerTest extends BaseControllerTest {
 
     }
 
+
     @Test
     @TestDescription("없는 이벤트는 조회했을 때 404 응답받기")
     public void getEventUpdate404() throws Exception {
@@ -486,4 +580,49 @@ public class EventControllerTest extends BaseControllerTest {
 
 
     }
+
+    @Test
+    @TestDescription("매니저 같지 않음")
+    public void getEventUpdate401() throws Exception {
+        //given
+        Set<AccountRole> adminRole = new HashSet();
+        adminRole.add(AccountRole.ADMIN);
+        Account admin = Account.builder()
+                .email(appProperties.getAdminUsername())
+                .password(appProperties.getAdminPassword())
+                .roles(adminRole)
+                .build();
+        accountService.saveAccount(admin);
+
+        Event event = Event.builder()
+                .name("rest api 만들기")
+                .description("spring boot rest api ")
+                .beginEnrollmentDateTime(LocalDateTime.of(2019,3,11,10,0,0))
+                .closeEnrollmentDateTime(LocalDateTime.of(2019,3,12,10,0,0))
+                .beginEventDateTime(LocalDateTime.of(2019,3,13,10,0,0))
+                .endEventDateTime(LocalDateTime.of(2019,3,14,10,0,0))
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100)
+                .location("강남")
+                .manager(admin)
+                .build();
+
+        Event newEvent = this.eventRepository.save(event);
+        EventDto eventDto = modelMapper.map(event, EventDto.class);
+
+        // When & Then
+        this.mockMvc.perform(put("/api/events/" + newEvent.getId())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
+                .accept(MediaTypes.HAL_JSON) //받고싶은 타입
+                .content(objectMapper.writeValueAsString(eventDto))) //event를 json을 String으로 맵핑
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+        ;
+
+
+    }
+
+
 }

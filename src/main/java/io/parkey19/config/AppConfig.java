@@ -47,7 +47,7 @@ public class AppConfig {
                 adminRole.add(AccountRole.ADMIN);
 
                 Set<AccountRole> userRole = new HashSet();
-                userRole.add(AccountRole.ADMIN);
+                userRole.add(AccountRole.USER);
 
                 Account admin = Account.builder()
                         .email(appProperties.getAdminUsername())
