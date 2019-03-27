@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -33,13 +34,15 @@ public class AccountServiceTest {
     @Autowired
     AccountRepository accountRepository;
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void findByUserName() {
-        String email = "1234";
-        String name = "1234";
+        String email = "p19@mail.com";
         String password = "1234";
         Set<AccountRole> set = new HashSet();
         set.add(AccountRole.ADMIN);
@@ -49,12 +52,12 @@ public class AccountServiceTest {
                                 .password(password)
                                 .roles(set)
                                 .build();
-        accountRepository.save(account);
+        accountService.saveAccount(account);
 
         UserDetailsService userDetailsService = (UserDetailsService) accountService;
-        UserDetails userDetails = userDetailsService.loadUserByUsername("p19");
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        assertThat(userDetails.getPassword()).isEqualTo(password);
+        assertThat(this.passwordEncoder.matches(password, userDetails.getPassword())).isTrue();
     }
 
     @Test(expected = UsernameNotFoundException.class)
