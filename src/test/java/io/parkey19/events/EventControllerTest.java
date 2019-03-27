@@ -5,6 +5,7 @@ import io.parkey19.account.Account;
 import io.parkey19.account.AccountRepository;
 import io.parkey19.account.AccountRole;
 import io.parkey19.account.AccountService;
+import io.parkey19.common.AppProperties;
 import io.parkey19.common.BaseControllerTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +47,9 @@ public class EventControllerTest extends BaseControllerTest {
 
     @Autowired
     AccountRepository accountRepository;
+
+    @Autowired
+    AppProperties appProperties;
 
     @Before
     public void before() {
@@ -152,25 +156,22 @@ public class EventControllerTest extends BaseControllerTest {
      */
     private String getAccessToken() throws Exception {
         // Given
-        String username = "pp@gmail.com";
-        String password = "1234";
         Set<AccountRole> set = new HashSet();
         set.add(AccountRole.ADMIN);
         set.add(AccountRole.USER);
 
         Account account = Account.builder()
-                .email(username)
-                .password(password)
+                .email(appProperties.getUserUsername())
+                .password(appProperties.getUserPassword())
                 .roles(set)
                 .build();
         accountService.saveAccount(account);
 
-        String clientId = "myApp";
-        String clientSecret = "pass";
+
         ResultActions perform = this.mockMvc.perform(post("/oauth/token")
-                .with(httpBasic(clientId, clientSecret)) // Basic OAuth Header
-                .param("username", username)
-                .param("password", password)
+                .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret())) // Basic OAuth Header
+                .param("username", appProperties.getUserUsername())
+                .param("password", appProperties.getUserPassword())
                 .param("grant_type", "password"));
         String responseBody = perform.andReturn().getResponse().getContentAsString();
         Jackson2JsonParser parser = new Jackson2JsonParser();

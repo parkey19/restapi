@@ -3,6 +3,7 @@ package io.parkey19.config;
 import io.parkey19.account.Account;
 import io.parkey19.account.AccountRole;
 import io.parkey19.account.AccountService;
+import io.parkey19.common.AppProperties;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -36,17 +37,32 @@ public class AppConfig {
         return new ApplicationRunner() {
             @Autowired
             AccountService accountService;
+
+            @Autowired
+            AppProperties appProperties;
+
             @Override
             public void run(ApplicationArguments applicationArguments) throws Exception {
-                Set<AccountRole> roleSet = new HashSet();
-                roleSet.add(AccountRole.ADMIN);
-                roleSet.add(AccountRole.USER);
-                Account account = Account.builder()
-                        .email("pp@gmail.com")
-                        .password("1234")
-                        .roles(roleSet)
+                Set<AccountRole> adminRole = new HashSet();
+                adminRole.add(AccountRole.ADMIN);
+
+                Set<AccountRole> userRole = new HashSet();
+                userRole.add(AccountRole.ADMIN);
+
+                Account admin = Account.builder()
+                        .email(appProperties.getAdminUsername())
+                        .password(appProperties.getAdminPassword())
+                        .roles(adminRole)
                         .build();
-                accountService.saveAccount(account);
+                accountService.saveAccount(admin);
+
+                Account user = Account.builder()
+                        .email(appProperties.getUserUsername())
+                        .password(appProperties.getUserPassword())
+                        .roles(userRole)
+                        .build();
+                accountService.saveAccount(user);
+
             }
         };
     }

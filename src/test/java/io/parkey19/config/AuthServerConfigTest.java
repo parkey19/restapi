@@ -2,6 +2,7 @@ package io.parkey19.config;
 
 import io.parkey19.account.Account;
 import io.parkey19.account.AccountService;
+import io.parkey19.common.AppProperties;
 import io.parkey19.common.BaseControllerTest;
 import io.parkey19.events.TestDescription;
 import org.junit.Test;
@@ -21,26 +22,17 @@ public class AuthServerConfigTest extends BaseControllerTest {
     @Autowired
     AccountService accountService;
 
+    @Autowired
+    AppProperties appProperties;
+
     @Test
     @TestDescription("인증 토큰을 발급받는 테스트")
     public void getAuthToken() throws Exception {
-        //given
-        String userName = "pp1@gmail.com";
-        String password = "1234";
-        Account account = Account.builder()
-                            .email(userName)
-                            .password(password)
-                            .build();
-
-        accountService.saveAccount(account);
-
-        String clientId="myApp";
-        String clientSecret="pass";
 
         mockMvc.perform(post("/oauth/token")
-                .with(httpBasic(clientId, clientSecret))
-                .param("username", userName)
-                .param("password", password)
+                .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret()))
+                .param("username", appProperties.getUserUsername())
+                .param("password", appProperties.getUserPassword())
                 .param("grant_type", "password"))
                 .andDo(print())
                 .andExpect(status().isOk())
