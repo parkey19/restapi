@@ -74,7 +74,7 @@ public class EventControllerTest extends BaseControllerTest {
 
 
         mockMvc.perform(post("/api/events/")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
                 .accept(MediaTypes.HAL_JSON) //받고싶은 타입
                 .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
@@ -117,7 +117,7 @@ public class EventControllerTest extends BaseControllerTest {
                                 headerWithName(HttpHeaders.LOCATION).description("Location header"),
                                 headerWithName(HttpHeaders.CONTENT_TYPE).description("Content type")
                         ),
-                        responseFields( //응답 본문 문서화
+                        relaxedResponseFields( //응답 본문 문서화
                                 fieldWithPath("id").description("identifier of new event"),
                                 fieldWithPath("name").description("event name"),
                                 fieldWithPath("description").description("date time of begin of new event"),
@@ -145,8 +145,8 @@ public class EventControllerTest extends BaseControllerTest {
 
     }
 
-    private String getBearerToken() throws Exception {
-        return "Bearer " + getAccessToken();
+    private String getBearerToken(boolean isCreateUser) throws Exception {
+        return "Bearer " + getAccessToken(isCreateUser);
     }
 
     /**
@@ -154,19 +154,20 @@ public class EventControllerTest extends BaseControllerTest {
      * @return
      * @throws Exception
      */
-    private String getAccessToken() throws Exception {
+    private String getAccessToken(boolean isCreateUser) throws Exception {
         // Given
-        Set<AccountRole> set = new HashSet();
-        set.add(AccountRole.ADMIN);
-        set.add(AccountRole.USER);
+        if (!isCreateUser) {
+            Set<AccountRole> set = new HashSet();
+            set.add(AccountRole.ADMIN);
+            set.add(AccountRole.USER);
 
-        Account account = Account.builder()
-                .email(appProperties.getUserUsername())
-                .password(appProperties.getUserPassword())
-                .roles(set)
-                .build();
-        accountService.saveAccount(account);
-
+            Account account = Account.builder()
+                    .email(appProperties.getUserUsername())
+                    .password(appProperties.getUserPassword())
+                    .roles(set)
+                    .build();
+            accountService.saveAccount(account);
+        }
 
         ResultActions perform = this.mockMvc.perform(post("/oauth/token")
                 .with(httpBasic(appProperties.getClientId(), appProperties.getClientSecret())) // Basic OAuth Header
@@ -199,7 +200,7 @@ public class EventControllerTest extends BaseControllerTest {
 
 
         mockMvc.perform(post("/api/events/")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
                 .accept(MediaTypes.HAL_JSON) //받고싶은 타입
                 .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
@@ -215,7 +216,7 @@ public class EventControllerTest extends BaseControllerTest {
         EventDto eventDto = EventDto.builder().build();
 
         this.mockMvc.perform(post("/api/events")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .content(this.objectMapper.writeValueAsString(eventDto)))
                 .andExpect(status().isBadRequest());
@@ -238,7 +239,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .build();
 
         this.mockMvc.perform(post("/api/events")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .content(this.objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
@@ -326,7 +327,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         //when
         this.mockMvc.perform(get("/api/events")
-                        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                        .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                         .param("page", "1")
                         .param("size", "10")
                         .param("sort", "name,DESC")
@@ -416,7 +417,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         // When & Then
         this.mockMvc.perform((get("/api/events/{id}", event.getId())
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("name").exists())
@@ -449,6 +450,15 @@ public class EventControllerTest extends BaseControllerTest {
     @TestDescription("기존의 이벤트를 하나 수정하기")
     public void getEventUpdate() throws Exception {
         //given
+        Set<AccountRole> userRole = new HashSet();
+        userRole.add(AccountRole.USER);
+        Account user = Account.builder()
+                .email(appProperties.getUserUsername())
+                .password(appProperties.getUserPassword())
+                .roles(userRole)
+                .build();
+        accountService.saveAccount(user);
+
         Event updateTargetEvent = Event.builder()
                 .name("rest api 만들기 22")
                 .description("spring boot rest api ")
@@ -460,6 +470,7 @@ public class EventControllerTest extends BaseControllerTest {
                 .maxPrice(200)
                 .limitOfEnrollment(100)
                 .location("강남")
+                .manager(user)
                 .build();
 
         Event event = this.eventRepository.save(updateTargetEvent);
@@ -468,7 +479,7 @@ public class EventControllerTest extends BaseControllerTest {
         EventDto eventDto = modelMapper.map(event, EventDto.class);
 
         mockMvc.perform((put("/api/events/{id}", event.getId()))
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(true))
                 .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
                 .accept(MediaTypes.HAL_JSON) //받고싶은 타입
                 .content(objectMapper.writeValueAsString(eventDto))) //event를 json을 String으로 맵핑
@@ -570,7 +581,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         // When & Then
         this.mockMvc.perform(put("/api/events/11883")
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
                 .accept(MediaTypes.HAL_JSON) //받고싶은 타입
                 .content(objectMapper.writeValueAsString(event))) //event를 json을 String으로 맵핑
@@ -613,7 +624,7 @@ public class EventControllerTest extends BaseControllerTest {
 
         // When & Then
         this.mockMvc.perform(put("/api/events/" + newEvent.getId())
-                .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+                .header(HttpHeaders.AUTHORIZATION, getBearerToken(false))
                 .contentType(MediaType.APPLICATION_JSON_UTF8) //요청타입
                 .accept(MediaTypes.HAL_JSON) //받고싶은 타입
                 .content(objectMapper.writeValueAsString(eventDto))) //event를 json을 String으로 맵핑
